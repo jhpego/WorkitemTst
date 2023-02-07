@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WorkitemTst.Models;
 
@@ -11,9 +12,11 @@ using WorkitemTst.Models;
 namespace WorkitemTst.Migrations
 {
     [DbContext(typeof(AppDBContext))]
-    partial class AppDBContextModelSnapshot : ModelSnapshot
+    [Migration("20230202145604_workflowChanges")]
+    partial class workflowChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,53 +24,6 @@ namespace WorkitemTst.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("WorkitemTst.Entitys.Area", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ParentAreaIdId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParentAreaIdId");
-
-                    b.ToTable("Area");
-                });
-
-            modelBuilder.Entity("WorkitemTst.Entitys.Effort", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("WorkitemId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WorkitemId")
-                        .IsUnique();
-
-                    b.ToTable("Effort");
-                });
 
             modelBuilder.Entity("WorkitemTst.Entitys.Iteration", b =>
                 {
@@ -134,7 +90,7 @@ namespace WorkitemTst.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("InitialStatusId")
+                    b.Property<int>("InitialStatusId")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -144,99 +100,18 @@ namespace WorkitemTst.Migrations
                     b.Property<int>("NextStatusId")
                         .HasColumnType("int");
 
+                    b.Property<int>("WorkflowId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InitialStatusId");
 
                     b.HasIndex("NextStatusId");
 
+                    b.HasIndex("WorkflowId");
+
                     b.ToTable("Transition");
-                });
-
-            modelBuilder.Entity("WorkitemTst.Entitys.WorkProject", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("WorkProject");
-                });
-
-            modelBuilder.Entity("WorkitemTst.Entitys.WorkProjectArea", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AreaId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WorkProjectId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AreaId");
-
-                    b.HasIndex("WorkProjectId");
-
-                    b.ToTable("WorkProjectArea");
-                });
-
-            modelBuilder.Entity("WorkitemTst.Entitys.WorkProjectIteration", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("IterationId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WorkProjectId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IterationId");
-
-                    b.HasIndex("WorkProjectId");
-
-                    b.ToTable("WorkProjectIteration");
-                });
-
-            modelBuilder.Entity("WorkitemTst.Entitys.WorkProjectWorkitemType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("WorkProjectId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WorkitemTypeId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WorkProjectId");
-
-                    b.HasIndex("WorkitemTypeId");
-
-                    b.ToTable("WorkProjectWorkitemType");
                 });
 
             modelBuilder.Entity("WorkitemTst.Entitys.Workflow", b =>
@@ -264,15 +139,6 @@ namespace WorkitemTst.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AreaId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedMoment")
-                        .HasColumnType("datetime2");
-
                     b.Property<int?>("InteractionId")
                         .HasColumnType("int");
 
@@ -283,7 +149,7 @@ namespace WorkitemTst.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("StatusId")
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<int>("WorkitemTypeId")
@@ -291,11 +157,7 @@ namespace WorkitemTst.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AreaId");
-
                     b.HasIndex("InteractionId");
-
-                    b.HasIndex("StatusId");
 
                     b.HasIndex("WorkitemTypeId");
 
@@ -460,26 +322,6 @@ namespace WorkitemTst.Migrations
                     b.ToTable("Worklog");
                 });
 
-            modelBuilder.Entity("WorkitemTst.Entitys.Area", b =>
-                {
-                    b.HasOne("WorkitemTst.Entitys.Area", "ParentAreaId")
-                        .WithMany()
-                        .HasForeignKey("ParentAreaIdId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ParentAreaId");
-                });
-
-            modelBuilder.Entity("WorkitemTst.Entitys.Effort", b =>
-                {
-                    b.HasOne("WorkitemTst.Entitys.Workitem", null)
-                        .WithOne("Effort")
-                        .HasForeignKey("WorkitemTst.Entitys.Effort", "WorkitemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("WorkitemTst.Entitys.Iteration", b =>
                 {
                     b.HasOne("WorkitemTst.Entitys.Iteration", "Parent")
@@ -506,7 +348,8 @@ namespace WorkitemTst.Migrations
                     b.HasOne("WorkitemTst.Entitys.Status", "InitialStatus")
                         .WithMany()
                         .HasForeignKey("InitialStatusId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("WorkitemTst.Entitys.Status", "NextStatus")
                         .WithMany()
@@ -514,96 +357,33 @@ namespace WorkitemTst.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("WorkitemTst.Entitys.Workflow", "Workflow")
+                        .WithMany()
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("InitialStatus");
 
                     b.Navigation("NextStatus");
-                });
 
-            modelBuilder.Entity("WorkitemTst.Entitys.WorkProjectArea", b =>
-                {
-                    b.HasOne("WorkitemTst.Entitys.Area", "Area")
-                        .WithMany()
-                        .HasForeignKey("AreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WorkitemTst.Entitys.WorkProject", "WorkProject")
-                        .WithMany()
-                        .HasForeignKey("WorkProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Area");
-
-                    b.Navigation("WorkProject");
-                });
-
-            modelBuilder.Entity("WorkitemTst.Entitys.WorkProjectIteration", b =>
-                {
-                    b.HasOne("WorkitemTst.Entitys.Iteration", "Iteration")
-                        .WithMany()
-                        .HasForeignKey("IterationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WorkitemTst.Entitys.WorkProject", "WorkProject")
-                        .WithMany()
-                        .HasForeignKey("WorkProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Iteration");
-
-                    b.Navigation("WorkProject");
-                });
-
-            modelBuilder.Entity("WorkitemTst.Entitys.WorkProjectWorkitemType", b =>
-                {
-                    b.HasOne("WorkitemTst.Entitys.WorkProject", "WorkProject")
-                        .WithMany()
-                        .HasForeignKey("WorkProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WorkitemTst.Entitys.WorkitemType", "WorkitemType")
-                        .WithMany()
-                        .HasForeignKey("WorkitemTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("WorkProject");
-
-                    b.Navigation("WorkitemType");
+                    b.Navigation("Workflow");
                 });
 
             modelBuilder.Entity("WorkitemTst.Entitys.Workitem", b =>
                 {
-                    b.HasOne("WorkitemTst.Entitys.Area", "Area")
-                        .WithMany()
-                        .HasForeignKey("AreaId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("WorkitemTst.Entitys.Iteration", "Interaction")
                         .WithMany()
                         .HasForeignKey("InteractionId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("WorkitemTst.Entitys.Status", "Status")
-                        .WithMany()
-                        .HasForeignKey("StatusId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("WorkitemTst.Entitys.WorkitemType", "WorkitemType")
                         .WithMany()
                         .HasForeignKey("WorkitemTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Area");
-
                     b.Navigation("Interaction");
-
-                    b.Navigation("Status");
 
                     b.Navigation("WorkitemType");
                 });
@@ -702,9 +482,6 @@ namespace WorkitemTst.Migrations
 
             modelBuilder.Entity("WorkitemTst.Entitys.Workitem", b =>
                 {
-                    b.Navigation("Effort")
-                        .IsRequired();
-
                     b.Navigation("Values");
                 });
 

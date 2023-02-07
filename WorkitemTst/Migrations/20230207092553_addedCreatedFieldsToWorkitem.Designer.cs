@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WorkitemTst.Models;
 
@@ -11,9 +12,11 @@ using WorkitemTst.Models;
 namespace WorkitemTst.Migrations
 {
     [DbContext(typeof(AppDBContext))]
-    partial class AppDBContextModelSnapshot : ModelSnapshot
+    [Migration("20230207092553_addedCreatedFieldsToWorkitem")]
+    partial class addedCreatedFieldsToWorkitem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -63,8 +66,7 @@ namespace WorkitemTst.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WorkitemId")
-                        .IsUnique();
+                    b.HasIndex("WorkitemId");
 
                     b.ToTable("Effort");
                 });
@@ -473,11 +475,13 @@ namespace WorkitemTst.Migrations
 
             modelBuilder.Entity("WorkitemTst.Entitys.Effort", b =>
                 {
-                    b.HasOne("WorkitemTst.Entitys.Workitem", null)
-                        .WithOne("Effort")
-                        .HasForeignKey("WorkitemTst.Entitys.Effort", "WorkitemId")
+                    b.HasOne("WorkitemTst.Entitys.Workitem", "Workitem")
+                        .WithMany()
+                        .HasForeignKey("WorkitemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Workitem");
                 });
 
             modelBuilder.Entity("WorkitemTst.Entitys.Iteration", b =>
@@ -702,9 +706,6 @@ namespace WorkitemTst.Migrations
 
             modelBuilder.Entity("WorkitemTst.Entitys.Workitem", b =>
                 {
-                    b.Navigation("Effort")
-                        .IsRequired();
-
                     b.Navigation("Values");
                 });
 

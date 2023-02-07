@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WorkitemTst.Entitys;
 using WorkitemTst.Models;
 
 namespace WorkitemTst.Controllers
@@ -18,79 +19,240 @@ namespace WorkitemTst.Controllers
         public string CreateData()
         {
 
+            #region INTERACTION
+
+            var mainInteraction = new Iteration() {
+                Name = "2022",
+                Active = false,
+                StartDate = new DateTime(2023, 1, 1, 0, 0, 0),
+                EndDate = new DateTime(2023, 12, 31, 0, 0, 0),
+            };
+
+            var childInteractions = new List<Iteration>() {
+                 new Iteration(){
+                    Name = "January",
+                    Active= false,
+                    StartDate = new DateTime(2023, 1, 1, 0, 0, 0),
+                    EndDate= new DateTime(2023, 1, 31, 0, 0, 0),
+                    Parent = mainInteraction
+                },
+                new Iteration(){
+                    Name = "February",
+                    Active= true,
+                    StartDate = new DateTime(2023, 2, 1, 0, 0, 0),
+                    EndDate= new DateTime(2023, 2, 28, 0, 0, 0),
+                    Parent = mainInteraction
+                }
+            };
+
+            _appDBContext.Iteration.Add(mainInteraction);
+            _appDBContext.Iteration.AddRange(childInteractions);
+            _appDBContext.SaveChanges();
+
+            #endregion INTERACTION
+
+
+            #region WORKFLOW
+
+
+            var wfUserStory = new Workflow()
+            {
+                Name = "WorkflowUserStory"
+            };
+
+            var US_statusNew = new Status() {
+                Code = "NEW",
+                Name = "New",
+                Workflow = wfUserStory
+            };
+
+            var US_statusAnalysis = new Status()
+            {
+                Code = "ANALISYS",
+                Name = "Analysis",
+                Workflow = wfUserStory
+            };
+
+            var US_statusActive = new Status()
+            {
+                Code = "ACTIVE",
+                Name = "Active",
+                Workflow = wfUserStory
+            };
+
+            var US_statusClosed = new Status()
+            {
+                Code = "CLOSED",
+                Name = "Closed",
+                Workflow = wfUserStory
+            };
+
+            var US_transitions = new List<Transition>() {
+                new Transition(){
+                Name = "initial",
+                InitialStatus = null,
+                NextStatus= US_statusNew,
+                },
+                new Transition(){
+                Name = "new2analysis",
+                InitialStatus = US_statusNew,
+                NextStatus= US_statusAnalysis,
+                },
+                new Transition(){
+                Name = "analysis2active",
+                InitialStatus = US_statusAnalysis,
+                NextStatus= US_statusActive,
+                },
+                new Transition(){
+                Name = "active2closed",
+                InitialStatus = US_statusActive,
+                NextStatus= US_statusClosed,
+                },
+            };
+
+            _appDBContext.Transition.AddRange(US_transitions);
+
+            var wfTask = new Workflow()
+            {
+                Name = "WorkflowTask"
+            };
+
+
+            var TSK_statusNew = new Status()
+            {
+                Code = "NEW",
+                Name = "New",
+                Workflow = wfTask
+            };
+
+            var TSK_statusPending = new Status()
+            {
+                Code = "PENDING",
+                Name = "Pending",
+                Workflow = wfTask
+            };
+
+            var TSK_statusActive = new Status()
+            {
+                Code = "ACTIVE",
+                Name = "Active",
+                Workflow = wfTask
+            };
+
+            var TSK_statusClosed = new Status()
+            {
+                Code = "CLOSED",
+                Name = "Closed",
+                Workflow = wfTask
+            };
+
+            var TSK_transitions = new List<Transition>() {
+                new Transition(){
+                Name = "initial",
+                InitialStatus = null,
+                NextStatus= TSK_statusNew,
+                },
+                new Transition(){
+                Name = "new2aactive",
+                InitialStatus = TSK_statusNew,
+                NextStatus= TSK_statusActive,
+                },
+                new Transition(){
+                Name = "active2pending",
+                InitialStatus = TSK_statusActive,
+                NextStatus= TSK_statusPending,
+                },
+                new Transition(){
+                Name = "pending2active",
+                InitialStatus = TSK_statusPending,
+                NextStatus= TSK_statusActive,
+                },
+                new Transition(){
+                Name = "active2closed",
+                InitialStatus = TSK_statusActive,
+                NextStatus= TSK_statusClosed,
+                },
+            };
+
+            _appDBContext.Transition.AddRange(TSK_transitions);
+
+            _appDBContext.SaveChanges();
+
+            #endregion WORKFLOW
+
+
             #region CREATE WITYPES
 
-            var tskfields = new List<WIField>() {
-            new WIField()
+            var tskfields = new List<WorkitemField>() {
+            new WorkitemField()
                 {
                     Order= 0,
-                    FieldType = WIFieldType.Text,
+                    FieldMode = WorkitemFieldKind.Text,
                     Name = "campo de texto"
                 },
-                new WIField()
+                new WorkitemField()
                 {
                     Order= 1,
-                    FieldType = WIFieldType.Dropdown,
+                    FieldMode = WorkitemFieldKind.Dropdown,
                     Name = "dropdown field"
                 }
             };
-            var usFields = new List<WIField>() {
-            new WIField()
+            var usFields = new List<WorkitemField>() {
+            new WorkitemField()
                 {
                     Order= 0,
-                    FieldType = WIFieldType.Text,
+                    FieldMode = WorkitemFieldKind.Text,
                     Name = "campo de texto us"
                 },
-                new WIField()
+                new WorkitemField()
                 {
                     Order= 1,
-                    FieldType = WIFieldType.Dropdown,
+                    FieldMode = WorkitemFieldKind.Dropdown,
                     Name = "dropdown field us"
                 }
             };
-            //var form = new WIForm()
-            //{
-            //    Fields = fields
-            //};
-            //var relations = new List<WITypeRelation>();
-            var wiType = new WIType()
+            var wiType = new WorkitemType()
             {
-                InternalCode = "task",
                 Name = "Task",
-                Relations = new List<WITypeRelation>(),
-                Fields = tskfields
+                //Relations = new List<WITypeRelation>(),
+                Fields = tskfields,
+                Workflow = wfTask,
             };
-            _appDBContext.WorkitemTypes.Add(wiType);
-            var wiType2 = new WIType()
+            _appDBContext.WorkitemType.Add(wiType);
+            var wiType2 = new WorkitemType()
             {
-                InternalCode = "userStory",
                 Name = "UserStory",
-                Relations = new List<WITypeRelation>(),
-                Fields = usFields
+                //Relations = new List<WITypeRelation>(),
+                Fields = usFields,
+                Workflow = wfUserStory,
+                
             };
-            _appDBContext.WorkitemTypes.Add(wiType2);
+            _appDBContext.WorkitemType.Add(wiType2);
             _appDBContext.SaveChanges();
 
             #endregion CREATE WITYPES
 
 
             #region CREATE RELATIONS
-            var wiTaskType = _appDBContext.WorkitemTypes.Where(witype => witype.Name == "Task").OrderBy(witype => witype.Id).Last();
-            var wiUSType = _appDBContext.WorkitemTypes.Where(witype => witype.Name == "UserStory").OrderBy(witype => witype.Id).Last();
+            var wiTaskType = _appDBContext.WorkitemType.Where(witype => witype.Name == "Task").OrderBy(witype => witype.Id).Last();
+            var wiUSType = _appDBContext.WorkitemType.Where(witype => witype.Name == "UserStory").OrderBy(witype => witype.Id).Last();
 
-            wiUSType.Relations = new List<WITypeRelation> {
-                new WITypeRelation()
+            var wiUSTypeRelations = new List<WorkitemTypeRelation> {
+                new WorkitemTypeRelation()
                 {
-                    Relation = WIRelationTypeEnum.Child,
-                    TargetWIType= wiTaskType,
+                    SourcetWorkitemType = wiTaskType,
+                    RelationMode = WorkitemRelationKind.Parent,
+                    TargetWorkitemType= wiUSType ,
 
                 },
-                            new WITypeRelation()
+                new WorkitemTypeRelation()
                 {
-                    Relation = WIRelationTypeEnum.Related,
-                    TargetWIType= wiUSType,
-                            }
+                    SourcetWorkitemType = wiUSType,
+                    RelationMode = WorkitemRelationKind.Related,
+                    TargetWorkitemType= wiUSType,
+                }
             };
+            _appDBContext.WorkitemTypeRelation.AddRange(wiUSTypeRelations);
 
             _appDBContext.SaveChanges();
 
@@ -99,43 +261,46 @@ namespace WorkitemTst.Controllers
 
             #region CREATE WORKITEM
 
-            var wiTaskTypeType = _appDBContext.WorkitemTypes.Where(witype => witype.Name == "Task").Include(witype => witype.Fields).OrderBy(witype => witype.Id).Last();
+            var wiTaskTypeType = _appDBContext.WorkitemType.Where(witype => witype.Name == "Task").Include(witype => witype.Fields).OrderBy(witype => witype.Id).Last();
             var taskFields = wiTaskTypeType.Fields;
-            var values = taskFields.Select(field => new WIValue()
+            var values = taskFields.Select(field => new WorkitemValue()
             {
                 Field = field,
                 Value = $"task value {field.Name}"
             });
             var wiTask = new Workitem()
             {
-                Title = "task 01",
-                WIType = wiTaskTypeType,
+                Name = "task 01",
+                WorkitemType = wiTaskTypeType,
                 Values = values.ToList(),
             };
-            _appDBContext.Workitems.Add(wiTask);
+            _appDBContext.Workitem.Add(wiTask);
 
-            var wiUSTypeType = _appDBContext.WorkitemTypes.Where(witype => witype.Name == "UserStory").Include(witype => witype.Fields).OrderBy(witype => witype.Id).Last();
+            var wiUSTypeType = _appDBContext.WorkitemType.Where(witype => witype.Name == "UserStory").Include(witype => witype.Fields).OrderBy(witype => witype.Id).Last();
             var ustoryFields = wiUSTypeType.Fields;
-            var usValues = ustoryFields.Select(field => new WIValue()
+            var usValues = ustoryFields.Select(field => new WorkitemValue()
             {
                 Field = field,
                 Value = $"us value {field.Name}"
             });
-            var usRelations = new List<WIRelation>() {
-            new WIRelation(){
-                TargetWorkitem = wiTask,
-                Relation = WIRelationTypeEnum.Child
-            }
-            };
             var wiUstory = new Workitem()
             {
-                Title = "UserStory 01",
-                WIType = wiUSTypeType,
+                Name = "UserStory 01",
+                WorkitemType = wiUSTypeType,
                 Values = usValues.ToList(),
-                Relations = usRelations,
+                //Relations = usRelations,
             };
-            _appDBContext.Workitems.Add(wiUstory);
 
+            var usRelations = new List<WorkitemRelation>() {
+            new WorkitemRelation(){
+                SourceWorkitem = wiTask,
+                TargetWorkitem = wiUstory,
+                Relation = wiUSTypeRelations.Where( rel => rel.RelationMode == WorkitemRelationKind.Parent ).FirstOrDefault()
+            }
+            };
+
+            _appDBContext.Workitem.Add(wiUstory);
+            _appDBContext.WorkitemRelation.AddRange(usRelations);
             _appDBContext.SaveChanges();
 
             #endregion CREATE WORKITEM
@@ -146,21 +311,23 @@ namespace WorkitemTst.Controllers
 
 
         [HttpGet("types")]
-        public IEnumerable<dynamic> GetWITypes()
+        public IEnumerable<dynamic> GetWorkitemTypes()
         {
-            var typesList = _appDBContext.WorkitemTypes.Include(type => type.Fields).Include(type => type.Relations).ToList();
+            var typesList = _appDBContext.WorkitemType.Include(type => type.Fields)
+                //.Include(type => type.Relations)
+                .ToList();
 
             var complete = typesList.Select((type) => new
             {
                 TypeId = type.Id,
                 TypeName = type.Name,
-                Relations = type.Relations.Select(relation => new
-                {
-                    TypeName = relation.TargetWIType.Name,
-                    TypeId = relation.TargetWIType.Id,
-                    Relation = Enum.GetName(typeof(WIRelationTypeEnum), relation.Relation)
+                //Relations = type.Relations.Select(relation => new
+                //{
+                //    TypeName = relation.TargetWIType.Name,
+                //    TypeId = relation.TargetWIType.Id,
+                //    Relation = Enum.GetName(typeof(WorkitemRelationKind), relation.Relation)
 
-                })
+                //})
             });
             return complete.ToList();
         }
@@ -170,10 +337,10 @@ namespace WorkitemTst.Controllers
         public string DeleteData()
         {
             _appDBContext.Fields.RemoveRange(_appDBContext.Fields);
-            _appDBContext.WIRelations.RemoveRange(_appDBContext.WIRelations);
-            _appDBContext.Workitems.RemoveRange(_appDBContext.Workitems);
-            _appDBContext.TypeRelations.RemoveRange(_appDBContext.TypeRelations);
-            _appDBContext.WorkitemTypes.RemoveRange(_appDBContext.WorkitemTypes);
+            _appDBContext.WorkitemRelation.RemoveRange(_appDBContext.WorkitemRelation);
+            _appDBContext.Workitem.RemoveRange(_appDBContext.Workitem);
+            _appDBContext.WorkitemTypeRelation.RemoveRange(_appDBContext.WorkitemTypeRelation);
+            _appDBContext.WorkitemType.RemoveRange(_appDBContext.WorkitemType);
             _appDBContext.SaveChanges();
             return "deleted";
         }
@@ -182,12 +349,12 @@ namespace WorkitemTst.Controllers
 
 
         [HttpGet("instances")]
-        public IEnumerable<Workitem> GetWIInstances()
+        public IEnumerable<Workitem> GetWorkitemInstances()
         {
-            var instancesList = _appDBContext.Workitems
+            var instancesList = _appDBContext.Workitem
                 .Include(wi => wi.Values)
                 //.Include(wi => wi.Relations)
-                .Include(wi => wi.WIType)
+                .Include(wi => wi.WorkitemType)
                     .ThenInclude(type => type.Fields)
                 .ToList();
             return instancesList;
