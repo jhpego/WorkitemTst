@@ -1,13 +1,16 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Nodes;
 //using System.Data.Entity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Storage;
 using WorkitemTst.Entitys;
 using DbContext = Microsoft.EntityFrameworkCore.DbContext;
 //using TodoApi.Models;
 
 namespace WorkitemTst.Models
 {
-    public class AppDBContext: DbContext
+    public class AppDBContext : DbContext
     {
         public AppDBContext(DbContextOptions<AppDBContext> options) : base(options)
         {
@@ -46,7 +49,9 @@ namespace WorkitemTst.Models
 
         public DbSet<Effort> Effort { get; set; } = null!;
 
+        public DbSet<WorkitemValue> WorkitemValue { get; set; } = null!;
 
+        public DbSet<WorkitemField> WorkitemField { get; set; } = null!;
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -56,7 +61,23 @@ namespace WorkitemTst.Models
                 relationship.DeleteBehavior = DeleteBehavior.Restrict;
             }
 
+
+
+            //            modelBuilder.HasDbFunction(
+            //    typeof(Database).GetMethod(nameof(JsonValue))!
+            //).HasName("JSON_VALUE").IsBuiltIn();
+
+            //            modelBuilder.HasDbFunction(
+            //                typeof(Database).GetMethod(nameof(JsonQuery))!
+            //            ).HasName("JSON_QUERY").IsBuiltIn();
+
+
+
             base.OnModelCreating(modelBuilder);
+
+
+
+
 
 
             //modelBuilder.Entity<WorkitemTypeRelation>()
@@ -76,8 +97,21 @@ namespace WorkitemTst.Models
             //;
 
         }
+
+        //    public static string JsonValue(string column, [NotParameterized] string path)
+        //=> throw new NotSupportedException();
+
+        //    public static string JsonQuery(string column, [NotParameterized] string path) =>
+        //        throw new NotSupportedException();
+        //}
+
+        [DbFunction("JSON_VALUE", IsBuiltIn = true, IsNullable = false)]
+        public static string JsonValue(string expression, string path) => throw new NotImplementedException();
+
+
+        [DbFunction("ISJSON", IsBuiltIn = true, IsNullable = false)]
+        public static int IsJson(string expression) => throw new NotImplementedException();
     }
 
-    
 }
 

@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using static Extensions.MyExtension;
 
 namespace WorkitemTst.Entitys
 {
-    public class Iteration : BaseEntity
+    public class Iteration : Treeable
     {
         public string Name { get; set; }
         public DateTime StartDate { get; set; }
