@@ -36,7 +36,7 @@ namespace WorkitemTst.Models
 
         public DbSet<Status> Status { get; set; } = null!;
 
-        public DbSet<Transition> Transition { get; set; } = null!;
+        public DbSet<WorkitemTst.Entitys.Transition> Transition { get; set; } = null!;
 
         public DbSet<WorkProject> WorkProject { get; set; } = null!;
 
@@ -52,6 +52,10 @@ namespace WorkitemTst.Models
         public DbSet<WorkitemValue> WorkitemValue { get; set; } = null!;
 
         public DbSet<WorkitemField> WorkitemField { get; set; } = null!;
+
+        public DbSet<SimpleWit> SimpleWit { get; set; } = null!;
+
+        public DbSet<SimpleWi> SimpleWi { get; set; } = null!;
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

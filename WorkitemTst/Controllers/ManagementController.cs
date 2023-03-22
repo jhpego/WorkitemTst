@@ -1,7 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System;
+using System.Text.Json;
+using System.Xml;
+using System.Xml.Serialization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
+using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
+using Microsoft.VisualStudio.Services.WebApi.Patch;
+using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 using WorkitemTst.Entitys;
+using WorkitemTst.Facade;
 using WorkitemTst.Models;
+using Transition = WorkitemTst.Entitys.Transition;
+using Workflow = WorkitemTst.Entitys.Workflow;
+using System.Linq;
+using Microsoft.VisualStudio.Services.Common;
+using System.Security.Policy;
+using Microsoft.Extensions.Options;
 
 namespace WorkitemTst.Controllers
 {
@@ -9,9 +25,15 @@ namespace WorkitemTst.Controllers
     {
 
         readonly AppDBContext _appDBContext;
-        public ManagementController(AppDBContext appDBContext)
+        private readonly Tfs _tfs;
+
+        public ManagementController(
+            AppDBContext appDBContext,
+            Tfs tfs
+            )
         {
             _appDBContext = appDBContext;
+            this._tfs = tfs;
         }
 
 
@@ -359,6 +381,226 @@ namespace WorkitemTst.Controllers
                 .ToList();
             return instancesList;
         }
+
+
+
+        [HttpGet("syncwit")]
+        public IEnumerable<string> SyncWorkitemTypes()
+        {
+            var output = new List<string>();
+            var listOfInsightWorkitemTypes = _appDBContext.SimpleWit.ToList();
+
+            var listOfAzureWorkitemTypes = _tfs.GetWorkitemTypeList();
+            foreach (var type in listOfAzureWorkitemTypes) { 
+            
+                var typeDetail =  _tfs.GetWorkitemType(type);
+                var hashString = typeDetail.GetHashCode().ToString();
+
+                XmlSerializer xmlSerializer = new XmlSerializer(typeof(XmlWorkitemType));
+                var xmlContent = "";
+
+                using (var sww = new StringWriter())
+                {
+                    using (XmlWriter writer = XmlWriter.Create(sww))
+                    {
+                        xmlSerializer.Serialize(writer, typeDetail);
+                        xmlContent = sww.ToString(); // Your XML
+                    }
+                }
+
+   
+
+
+                if (hashString != "0")
+                {
+                    var foundInsightWorkitem = listOfInsightWorkitemTypes.Where(wi =>
+                        typeDetail.WorkItemType.Name == wi.Name
+                        && wi.Hash == hashString
+                    ).FirstOrDefault();
+                    if (foundInsightWorkitem == null)
+                    {
+                        _appDBContext.SimpleWit.Add(
+                            new SimpleWit()
+                            {
+                                Name = typeDetail.WorkItemType.Name, //internalCode
+                                Hash = hashString,
+                                Content = xmlContent
+                            }
+                            );
+                        output.Add(typeDetail.WorkItemType.Name);
+                    }
+                    else
+                    {
+                        if (foundInsightWorkitem.Hash != hashString)
+                        {
+                            foundInsightWorkitem = new SimpleWit()
+                            {
+                                Name = typeDetail.WorkItemType.Name,
+                                Hash = hashString,
+                                Content = xmlContent
+                            };
+                            output.Add(typeDetail.WorkItemType.Name);
+                        }
+                    }
+
+                }
+            }
+
+
+
+
+
+            // detectar as que foram apagadas
+
+            _appDBContext.SaveChanges();
+
+
+            
+            return output;
+        }
+
+
+
+        [HttpGet("syncwit2")]
+        public dynamic SyncWorkitemTypes2()
+        {
+
+            var itemsWitInsight = _appDBContext.SimpleWit.ToList();
+
+            //var itemsWitAzure = _tfs.GetWorkitemTypeList().Select(witName =>
+            //{
+            //    var witDetail = _tfs.GetWorkitemType(witName);
+            //    return new SimpleWit()
+            //    {
+            //        Name = witDetail.WorkItemType.Name,
+            //        Content = XmlWorkitemType.ToXmlString(witDetail),
+            //        Hash = witDetail.GenerateHash().ToString(),
+            //    };
+            //}).ToList();
+
+            var witList = _tfs.GetWorkitemTypeList();
+
+            List<SimpleWit> itemsWitAzureNew = new List<SimpleWit>();
+
+
+            ParallelOptions options = new()
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount
+            };
+
+            ParallelLoopResult result =  Parallel.ForEach(witList, options, witName =>
+            {
+                var witDetail = _tfs.GetWorkitemType(witName);
+                var newItem = new SimpleWit()
+                {
+                    Name = witDetail.WorkItemType.Name,
+                    Content = XmlWorkitemType.ToXmlString(witDetail),
+                    Hash = witDetail.GenerateHash(),
+                };
+                itemsWitAzureNew.Add(newItem);
+            });
+
+            var itemsAdded = itemsWitAzureNew.Except(itemsWitInsight);              //items que existem no azure, mas que ainda não existem no insight
+            var itemsRemoved = itemsWitInsight.Except(itemsWitAzureNew);            //items que existem no insight, mas que já não existem no azure
+            var itemsCommonInsight = itemsWitInsight.Intersect(itemsWitAzureNew);   //items que existem no insight e no azure
+            var azureDict = itemsWitAzureNew.Intersect(itemsWitInsight)             //hash de nomes de wits do azure, para posterior acesso rápido
+                    .ToDictionary(item => item.Name, item => item);
+            
+            var itemsChanged = itemsCommonInsight                                   //items que foram alterados, com base nas propriedades hash, novas e anteriores
+                .Where(currItem => azureDict[currItem.Name].Hash != currItem.Hash)
+                .ToList();
+            
+            foreach (var cItem in itemsChanged)
+            {
+                var azureItem = azureDict[cItem.Name];
+                cItem.Hash = azureItem.Hash;
+                cItem.Content = azureItem.Content;
+            }
+
+            _appDBContext.SimpleWit.AddRange(itemsAdded);
+            _appDBContext.SimpleWit.RemoveRange(itemsRemoved);
+
+            _appDBContext.SaveChanges();
+             
+            return new
+            {
+                Added = itemsAdded.Select( el => el.Name ),
+                Removed = itemsRemoved.Select(el => el.Name),
+                Changed = itemsChanged.Select(el => el.Name),
+            };
+
+        }
+
+
+
+
+        [HttpGet("migratewi")]
+        public async Task<IEnumerable<string>> MigrateWorkitems()
+        {
+            var output = new List<string>();
+            var witClient = await _tfs.GetWitClient<WorkItemTrackingHttpClient>();
+            var projectIdServicesTests = "d559b200-8805-4670-b408-7dbdbb1880f3";
+            var projectIdVtxrmNew = Tfs.projectGuid;
+            var sourceProjectId = projectIdVtxrmNew;
+            var targetProjectId = projectIdVtxrmNew;
+
+
+            var latestRevisions = await witClient.ReadReportingRevisionsGetAsync(sourceProjectId, null, null, null, null, null, null, null, true );
+            var workitemsList = latestRevisions.Values;
+            _appDBContext.SimpleWi.AddRange(
+                workitemsList.Select( wi => new SimpleWi() { 
+                    Name = wi.Fields.Where( f => f.Key == "System.Title" ).FirstOrDefault().Value.ToString(),
+                    Content = JsonSerializer.Serialize(wi),
+                    Hash = wi.Id.ToString(),
+                })
+                );
+            _appDBContext.SaveChanges();
+
+
+            var listDoNotUpdate = new List<string>() {
+            "System.BoardColumn","System.BoardColumnDone"
+            };
+
+            foreach (  var workitem in workitemsList )
+            {
+                var patchOperations = workitem.Fields
+                    .Where( f => !listDoNotUpdate.Contains(f.Key))
+                    .Select(f => new JsonPatchOperation()
+                        {
+                            Operation = Operation.Replace,
+                            Path = $"/fields/{f.Key}",
+                            Value = f.Value
+                        });
+
+                JsonPatchDocument patchDocument = new JsonPatchDocument();
+                patchDocument.AddRange(patchOperations);
+
+                string title = workitem.Fields.Where(f => f.Key == "System.Title").FirstOrDefault().Value.ToString();
+                string WorkitemType = workitem.Fields.Where( f => f.Key == "System.WorkItemType").FirstOrDefault().Value.ToString();
+
+                try
+                {
+                    var res = await witClient.CreateWorkItemAsync(patchDocument, targetProjectId, WorkitemType);
+                }
+                catch (Exception ex)
+                {
+
+                    throw;
+                }
+                
+            };
+
+
+            //witClient.CreateWorkItemBatchRequest(projectIdServicesTests)
+
+
+
+
+
+            output = workitemsList.Select(wi => wi.Id.ToString()).ToList();
+            return output;
+        }
+
 
     }
 }

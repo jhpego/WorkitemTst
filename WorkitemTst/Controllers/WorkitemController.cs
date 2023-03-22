@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WorkitemTst.Entitys;
 using WorkitemTst.Models;
+using Transition = WorkitemTst.Entitys.Transition;
+using WorkitemType = WorkitemTst.Entitys.WorkitemType;
 
 namespace WorkitemTst.Controllers
 {

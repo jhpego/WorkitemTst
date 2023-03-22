@@ -1,4 +1,7 @@
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using WorkitemTst.Facade;
 using WorkitemTst.Models;
 
 namespace WorkitemTst
@@ -13,7 +16,7 @@ namespace WorkitemTst
             var builder = WebApplication.CreateBuilder(args);
 
 
-
+            builder.Services.AddSingleton<Tfs, Tfs>();
 
             // Add services to the container.
             builder.Services.AddCors(options =>
@@ -32,8 +35,15 @@ namespace WorkitemTst
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
+            builder.Services.AddSwaggerGen(
+                c =>
+                {
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+                    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetExecutingAssembly().GetName().Name}.xml"));
+                    //c.OrderActionsBy(apiDesc => $"{apiDesc.ActionDescriptor.RouteValues["Tfs"]}_{apiDesc.RelativePath}");
+                    c.OrderActionsBy((apiDesc) => $"{apiDesc.RelativePath}");
+                });
+        
 
             var connectionString = builder.Configuration.GetConnectionString("WIConnection");
 
@@ -50,7 +60,11 @@ namespace WorkitemTst
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(
+                    c =>
+                    {
+                        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+                    });
             }
 
             app.UseHttpsRedirection();
