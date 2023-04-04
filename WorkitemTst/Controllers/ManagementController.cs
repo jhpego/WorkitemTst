@@ -539,17 +539,17 @@ namespace WorkitemTst.Controllers
         {
             var output = new List<string>();
             var witClient = await _tfs.GetWitClient<WorkItemTrackingHttpClient>();
-            var projectIdServicesTests = "d559b200-8805-4670-b408-7dbdbb1880f3";
-            var projectIdVtxrmNew = Tfs.projectGuid;
-            var sourceProjectId = projectIdVtxrmNew;
-            var targetProjectId = projectIdVtxrmNew;
+
+            //var projectIdVtxrmNew = Tfs.projectGuid;
+            var sourceProjectId = Tfs.projectGuidNewVtxrm;
+            var targetProjectId = Tfs.projectGuidWits2;
 
 
             var latestRevisions = await witClient.ReadReportingRevisionsGetAsync(sourceProjectId, null, null, null, null, null, null, null, true );
             var workitemsList = latestRevisions.Values;
             _appDBContext.SimpleWi.AddRange(
                 workitemsList.Select( wi => new SimpleWi() { 
-                    Name = wi.Fields.Where( f => f.Key == "System.Title" ).FirstOrDefault().Value.ToString(),
+                    Name = wi.Fields.Where( f => f.Key == "System.Title" )?.FirstOrDefault().Value?.ToString() ?? "defaultTitle",
                     Content = JsonSerializer.Serialize(wi),
                     Hash = wi.Id.ToString(),
                 })
@@ -558,29 +558,61 @@ namespace WorkitemTst.Controllers
 
 
             var listDoNotUpdate = new List<string>() {
-            "System.BoardColumn","System.BoardColumnDone"
+            "System.BoardColumn","System.BoardColumnDone", "System.State"
             };
 
             foreach (  var workitem in workitemsList )
             {
-                var patchOperations = workitem.Fields
+                WorkItem wiToClone = witClient.GetWorkItemAsync((int)workitem.Id).Result;
+
+
+
+                //var patchOperations = workitem.Fields
+                //    .Where( f => !listDoNotUpdate.Contains(f.Key))
+                //    .Select(f => new JsonPatchOperation()
+                //        {
+                //            Operation = Operation.Add,
+                //            Path = $"/fields/{f.Key}",
+                //            Value = f.Value 
+                //        }) ; 
+
+                var migrateDate = DateTime.Now;
+
+                var patchOperations = wiToClone.Fields
                     .Where( f => !listDoNotUpdate.Contains(f.Key))
                     .Select(f => new JsonPatchOperation()
                         {
-                            Operation = Operation.Replace,
+                            Operation = Operation.Add,
                             Path = $"/fields/{f.Key}",
-                            Value = f.Value
-                        });
+                        Value = f.Value
+                            //Value = f.Key == "System.Title" ? $" {f.Value} (migrated in {DateTime.Now})" : f.Value 
+                        }) ; 
+
 
                 JsonPatchDocument patchDocument = new JsonPatchDocument();
                 patchDocument.AddRange(patchOperations);
 
                 string title = workitem.Fields.Where(f => f.Key == "System.Title").FirstOrDefault().Value.ToString();
-                string WorkitemType = workitem.Fields.Where( f => f.Key == "System.WorkItemType").FirstOrDefault().Value.ToString();
+                string workitemType = workitem.Fields.Where( f => f.Key == "System.WorkItemType").FirstOrDefault().Value.ToString();
 
                 try
                 {
-                    var res = await witClient.CreateWorkItemAsync(patchDocument, targetProjectId, WorkitemType);
+                    //if (workitemType == "Feature")
+                    //{
+
+                        var res = await witClient.CreateWorkItemAsync(patchDocument, targetProjectId, workitemType, null, true);
+
+                    var updPatchDocument = new JsonPatchDocument() { 
+                        new JsonPatchOperation(){
+                                Operation = Operation.Replace,
+                                Path = $"/fields/System.Title",
+                                Value = $"{wiToClone.Fields["System.Title"]} (migrated in {DateTime.Now})"
+                        }
+                    };
+
+                        var res2 = await witClient.UpdateWorkItemAsync(updPatchDocument, (int)res.Id, null, true);
+                    //}
+
                 }
                 catch (Exception ex)
                 {

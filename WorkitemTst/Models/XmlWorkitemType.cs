@@ -136,9 +136,21 @@ namespace WorkitemTst.Models
         [XmlElement(ElementName = "HELPTEXT")]
         public string HelpText { get; set; }
 
+        [XmlArray("ALLOWEDVALUES")]
+        [XmlArrayItem("LISTITEM")]
+        public ListItem[] AllowedValues { get; set; }
+
     }
 
-    
+
+    public class ListItem
+    {
+
+        [XmlAttribute(AttributeName = "value")]
+        public string Value { get; set; }
+    }
+
+
     public class Workflow2
     {
         [XmlArray("STATES")]

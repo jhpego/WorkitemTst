@@ -321,6 +321,13 @@ namespace WorkitemTst.Controllers
 
 
 
+        [HttpPost("workitemType/upload")]
+        public async Task<string> UploadWit([FromForm] IFormFile file)
+        {
+            return this._tfs.UploadWorkitemType(file);
+        }
+
+
         /// <summary>
         /// Deletes a WorkItem Type
         /// </summary>
@@ -360,6 +367,49 @@ namespace WorkitemTst.Controllers
             var newWi = await witClient.CreateWorkItemAsync(document, projectId, witName);
             return newWi;
         }
+
+
+        [HttpGet("linktype")]
+        public async Task<IEnumerable<dynamic>> GetLinkTypes()
+        { 
+            return _tfs.GetLinkTypes();
+        }
+
+
+        [HttpGet("globallist/list")]
+        public async Task<IEnumerable<dynamic>> GetGlobalLists()
+        {
+            return _tfs.GetGlobalLists();
+        }
+
+        [HttpGet("globallists")]
+        public async Task<dynamic> ExportGlobalLists()
+        {
+            return _tfs.ExportGlobalLists();
+        }
+
+
+        [HttpDelete("globallists")]
+        public async Task<dynamic> DestroyGlobalLists([FromQuery] string globallistName)
+        {
+            return _tfs.DestroyGlobalList(globallistName);
+        }
+
+
+        [HttpGet("globalworkflow")]
+        public async Task<dynamic> ExportGlobalWorkflow([FromQuery] string? project)
+        {
+            return _tfs.ExportGlobalWorkflow(project);
+        }
+
+
+        [HttpPost("globalworkflow")]
+        public async Task<dynamic> ImportGlobalWorkflow([FromQuery] string? project)
+        {
+            return _tfs.ImportGlobalWorkflow(project);
+        }
+
+
 
 
     }
