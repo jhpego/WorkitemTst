@@ -102,9 +102,9 @@ namespace WorkitemTst.Facade
 
 
 
-        public List<string> GetWorkitemTypeList()
+        public List<string> GetWorkitemTypeList() 
         {
-            var result = ExecuteWitadmin("listwitd", "/p:\"{projectName}\"");
+            var result = ExecuteWitadmin("listwitd", $"/p:\"{projectName}\"");
 
             return result.Output.Replace("\r", "").Split("\n").Where( entry =>  !string.IsNullOrEmpty(entry)  ).ToList();
         }
@@ -255,6 +255,14 @@ namespace WorkitemTst.Facade
 
             return result.Output;
         }
+
+        public string RenameWorkitemType(string wit, string witNewName)
+        {
+            var result = ExecuteWitadmin("renamewitd", $"/p:\"{projectName}\" /n:\"{wit}\" /new:\"{witNewName}\" /noprompt");
+            return result.Output;
+        }
+
+
 
 
         public string UploadWorkitemType(IFormFile file)

@@ -328,6 +328,14 @@ namespace WorkitemTst.Controllers
         }
 
 
+        [HttpPatch("workitemType/{wit}")]
+        public async Task<string> RenameWit(string wit, [FromBody] WorkitemTypeInput workitem)
+        {
+            return this._tfs.RenameWorkitemType(wit, workitem.Name);
+        }
+
+
+
         /// <summary>
         /// Deletes a WorkItem Type
         /// </summary>
