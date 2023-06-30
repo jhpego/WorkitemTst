@@ -31,22 +31,11 @@ namespace WorkitemTst.Facade
 
     public class Tfs
     {
+        private readonly AppOptions _appOptions;
 
-        public const string azCredential = "en25man5qo4t4rjypxcvtc4b6wgrtmnxe2ebs4twlea45vr4xaha";
-        public const string urlCollection = "https://vmsys-tfsd02/DefaultCollection";
-        public const string witadminPath = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Professional\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer";
-
-        public const string projectName = "New VTXRM";
-        public const string projectGuid = "4d9b6282-36c4-4570-b8c8-088bdad876ac";
-
-        public const string projectGuidNewVtxrm = "4d9b6282-36c4-4570-b8c8-088bdad876ac";
-        public const string projectNameWits2 = "Vtxrm Wits 2";
-        public const string projectGuidWits2 = "40cb07e8-7bd9-44f9-9c06-c4e06d471bf4";
-        public const string projectGuidServicesTests = "d559b200-8805-4670-b408-7dbdbb1880f3";
-
-        public Tfs()
+        public Tfs(AppOptions appOptions)
         {
-
+            _appOptions = appOptions;   
         }
 
 
@@ -56,8 +45,8 @@ namespace WorkitemTst.Facade
         public async Task<T> GetWitClient<T>() where T : VssHttpClientBase
         {
             VssConnection connection = new VssConnection(
-                new Uri(urlCollection),
-                new VssBasicCredential("", azCredential)
+                new Uri(_appOptions.UrlCollection),
+                new VssBasicCredential("", _appOptions.AzureCredentials)
             );
 
             // Get the work item tracking client
@@ -88,8 +77,8 @@ namespace WorkitemTst.Facade
 
         private ProcessOutput ExecuteWitadmin(string operation, string args)
         {
-            var command = $"witadmin.exe {operation} /collection:\"{urlCollection}\" {args}";
-            var workingDirectory = witadminPath;
+            var command = $"witadmin.exe {operation} /collection:\"{_appOptions.UrlCollection}\" {args}";
+            var workingDirectory = _appOptions.PathWitAdmin;
             var result = ProcessCommand(command, workingDirectory);
             if (!string.IsNullOrEmpty(result.Error))
             {
@@ -104,7 +93,7 @@ namespace WorkitemTst.Facade
 
         public List<string> GetWorkitemTypeList() 
         {
-            var result = ExecuteWitadmin("listwitd", $"/p:\"{projectName}\"");
+            var result = ExecuteWitadmin("listwitd", $"/p:\"{_appOptions.ProjectName}\"");
 
             return result.Output.Replace("\r", "").Split("\n").Where( entry =>  !string.IsNullOrEmpty(entry)  ).ToList();
         }
@@ -112,7 +101,7 @@ namespace WorkitemTst.Facade
 
         public XmlWorkitemType GetWorkitemType(string wit)
         {
-            var result = ExecuteWitadmin("exportwitd", $"/p:\"{projectName}\" /n:\"{wit}\"");
+            var result = ExecuteWitadmin("exportwitd", $"/p:\"{_appOptions.ProjectName}\" /n:\"{wit}\"");
 
             var xmlWorkitem = result.Output;
             XmlWorkitemType workitemType;
@@ -251,14 +240,14 @@ namespace WorkitemTst.Facade
                 xs.Serialize(writer, inputXml);
             }
 
-            var result = ExecuteWitadmin("importwitd", $"/p:\"{projectName}\" /f:\"{tempFilePath}\"");
+            var result = ExecuteWitadmin("importwitd", $"/p:\"{_appOptions.ProjectName}\" /f:\"{tempFilePath}\"");
 
             return result.Output;
         }
 
         public string RenameWorkitemType(string wit, string witNewName)
         {
-            var result = ExecuteWitadmin("renamewitd", $"/p:\"{projectName}\" /n:\"{wit}\" /new:\"{witNewName}\" /noprompt");
+            var result = ExecuteWitadmin("renamewitd", $"/p:\"{_appOptions.ProjectName}\" /n:\"{wit}\" /new:\"{witNewName}\" /noprompt");
             return result.Output;
         }
 
@@ -278,7 +267,7 @@ namespace WorkitemTst.Facade
                 file.CopyTo(fileStream);
             }
 
-            var result = ExecuteWitadmin("importwitd", $"/p:\"{projectName}\" /f:\"{tempFilePath}\"");
+            var result = ExecuteWitadmin("importwitd", $"/p:\"{_appOptions.ProjectName}\" /f:\"{tempFilePath}\"");
 
             return result.Output;
 
@@ -288,7 +277,7 @@ namespace WorkitemTst.Facade
 
         public string DeleteWorkitemType(string wit)
         {
-            var result = ExecuteWitadmin("destroywitd", $"/p:\"{projectName}\" /n:\"{wit}\" /noprompt");
+            var result = ExecuteWitadmin("destroywitd", $"/p:\"{_appOptions.ProjectName}\" /n:\"{wit}\" /noprompt");
 
             return result.Output;
         }
@@ -344,7 +333,7 @@ namespace WorkitemTst.Facade
             //var witAdminArgs = $" /f:\"{tempFilePath}\" /exportgloballists ";
             var witAdminArgs = $" /f:\"{tempFilePath}\" ";
             if (!string.IsNullOrEmpty(project)) {
-                witAdminArgs = $" {witAdminArgs} /p:\"{projectName}\"";
+                witAdminArgs = $" {witAdminArgs} /p:\"{_appOptions.ProjectName}\"";
             }
             
             //var result = ExecuteWitadmin("exportglobalworkflow ", $" /f:\"{tempFilePath}\" /p:\"{projectName}\" /exportgloballists ");
@@ -378,7 +367,7 @@ namespace WorkitemTst.Facade
             var witAdminArgs = $" /f:\"{tempFilePath}\"";
             if (!string.IsNullOrEmpty(project))
             {
-                witAdminArgs = $" {witAdminArgs} /p:\"{projectName}\"";
+                witAdminArgs = $" {witAdminArgs} /p:\"{_appOptions.ProjectName}\"";
             }
 
 

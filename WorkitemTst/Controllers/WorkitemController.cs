@@ -51,7 +51,8 @@ namespace WorkitemTst.Controllers
         public ActionResult<IEnumerable<Workitem>> GetWorkitem()
         {
             var wi = _appDBContext.Workitem
-                //.Include(wi => wi.WorkitemType)
+                .Include(wi => wi.Values)
+                .Include(wi => wi.WorkitemType)
                 .ToList();
             return wi;
         }

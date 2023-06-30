@@ -26,17 +26,22 @@ namespace WorkitemTst.Controllers
 
         readonly AppDBContext _appDBContext;
         private readonly Tfs _tfs;
+        private readonly AppOptions _appOptions;
 
         public ManagementController(
             AppDBContext appDBContext,
-            Tfs tfs
+            Tfs tfs,
+            AppOptions appOptions
             )
         {
             _appDBContext = appDBContext;
             this._tfs = tfs;
+            _appOptions = appOptions;
         }
 
-
+        /// <summary>
+        /// Creates Initial instances in Database
+        /// </summary>
         [HttpPost("data")]
         public string CreateData()
         {
@@ -332,29 +337,10 @@ namespace WorkitemTst.Controllers
         }
 
 
-        [HttpGet("types")]
-        public IEnumerable<dynamic> GetWorkitemTypes()
-        {
-            var typesList = _appDBContext.WorkitemType.Include(type => type.Fields)
-                //.Include(type => type.Relations)
-                .ToList();
 
-            var complete = typesList.Select((type) => new
-            {
-                TypeId = type.Id,
-                TypeName = type.Name,
-                //Relations = type.Relations.Select(relation => new
-                //{
-                //    TypeName = relation.TargetWIType.Name,
-                //    TypeId = relation.TargetWIType.Id,
-                //    Relation = Enum.GetName(typeof(WorkitemRelationKind), relation.Relation)
-
-                //})
-            });
-            return complete.ToList();
-        }
-
-
+        /// <summary>
+        /// Deletes all data instances on Database
+        /// </summary>
         [HttpDelete("data")]
         public string DeleteData()
         {
@@ -368,22 +354,9 @@ namespace WorkitemTst.Controllers
         }
 
 
-
-
-        [HttpGet("instances")]
-        public IEnumerable<Workitem> GetWorkitemInstances()
-        {
-            var instancesList = _appDBContext.Workitem
-                .Include(wi => wi.Values)
-                //.Include(wi => wi.Relations)
-                .Include(wi => wi.WorkitemType)
-                    .ThenInclude(type => type.Fields)
-                .ToList();
-            return instancesList;
-        }
-
-
-
+        /// <summary>
+        /// Syncs WorkitemTypes between Database and Azure (listwitd)
+        /// </summary>
         [HttpGet("syncwit")]
         public IEnumerable<string> SyncWorkitemTypes()
         {
@@ -446,10 +419,6 @@ namespace WorkitemTst.Controllers
                 }
             }
 
-
-
-
-
             // detectar as que foram apagadas
 
             _appDBContext.SaveChanges();
@@ -460,7 +429,9 @@ namespace WorkitemTst.Controllers
         }
 
 
-
+        /// <summary>
+        /// Syncs WorkitemTypes between Database and Azure (listwitd) - 2nd approach
+        /// </summary>
         [HttpGet("syncwit2")]
         public dynamic SyncWorkitemTypes2()
         {
@@ -533,16 +504,17 @@ namespace WorkitemTst.Controllers
 
 
 
-
+        /// <summary>
+        /// Migrates Workitems between Projects
+        /// </summary>
         [HttpGet("migratewi")]
         public async Task<IEnumerable<string>> MigrateWorkitems()
         {
             var output = new List<string>();
             var witClient = await _tfs.GetWitClient<WorkItemTrackingHttpClient>();
 
-            //var projectIdVtxrmNew = Tfs.projectGuid;
-            var sourceProjectId = Tfs.projectGuidNewVtxrm;
-            var targetProjectId = Tfs.projectGuidWits2;
+            var sourceProjectId = _appOptions.ProjectGuidNewVtxrm;
+            var targetProjectId = _appOptions.ProjectGuidWits2;
 
 
             var latestRevisions = await witClient.ReadReportingRevisionsGetAsync(sourceProjectId, null, null, null, null, null, null, null, true );
@@ -565,17 +537,6 @@ namespace WorkitemTst.Controllers
             {
                 WorkItem wiToClone = witClient.GetWorkItemAsync((int)workitem.Id).Result;
 
-
-
-                //var patchOperations = workitem.Fields
-                //    .Where( f => !listDoNotUpdate.Contains(f.Key))
-                //    .Select(f => new JsonPatchOperation()
-                //        {
-                //            Operation = Operation.Add,
-                //            Path = $"/fields/{f.Key}",
-                //            Value = f.Value 
-                //        }) ; 
-
                 var migrateDate = DateTime.Now;
 
                 var patchOperations = wiToClone.Fields
@@ -584,7 +545,7 @@ namespace WorkitemTst.Controllers
                         {
                             Operation = Operation.Add,
                             Path = $"/fields/{f.Key}",
-                        Value = f.Value
+                            Value = f.Value
                             //Value = f.Key == "System.Title" ? $" {f.Value} (migrated in {DateTime.Now})" : f.Value 
                         }) ; 
 
@@ -622,12 +583,7 @@ namespace WorkitemTst.Controllers
                 
             };
 
-
             //witClient.CreateWorkItemBatchRequest(projectIdServicesTests)
-
-
-
-
 
             output = workitemsList.Select(wi => wi.Id.ToString()).ToList();
             return output;

@@ -21,6 +21,9 @@ namespace WorkitemTst.Controllers
             _appDBContext = appDBContext;
         }
 
+        /// <summary>
+        /// Uses Database JSON Functions to query Dynamic Data
+        /// </summary>
         [HttpGet("json")]
         public ActionResult<IEnumerable<dynamic>> QueryJson([FromQuery] string field, [FromQuery] string content, [FromQuery] bool desc = false)
         {

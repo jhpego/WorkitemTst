@@ -1,6 +1,8 @@
+using System.Configuration;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Microsoft.TeamFoundation.TestManagement.WebApi;
 using WorkitemTst.Facade;
 using WorkitemTst.Models;
 
@@ -30,6 +32,8 @@ namespace WorkitemTst
                                   });
             });
 
+
+            builder.Services.AddSingleton(builder.Configuration.GetSection("AppOptions").Get<AppOptions>());
 
 
             builder.Services.AddControllers();
